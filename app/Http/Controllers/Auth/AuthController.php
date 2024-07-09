@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -17,38 +18,40 @@ class AuthController extends Controller
 
     function register(Request $request)
     {
-
         // 1.-Recoge datos por post
-        $params = (object) $request->all(); // Devuelve un obejto
+        $params = (object) $request->all(); // Devuelve un objeto
 
         // 2.-Validar datos
         $validate = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed'
+            'password' => 'required|string|min:6|confirmed',
+            'persona_id' => 'required|integer'
         ]);
 
-        // Comprobar si los datos son validos
-        if ($validate->fails()) { // en caso si los datos fallan la validacion
-
+        // Comprobar si los datos son válidos
+        if ($validate->fails()) {
             $data = array(
                 'status' => 'Error',
                 'code' => 400,
                 'message' => 'Los datos enviados no son correctos',
                 'errors' => $validate->errors()
             );
-        } else { //Retornar una respuesta exitosa
+        } else {
+            // Iniciar una transacción
+            DB::beginTransaction();
 
             try {
                 // Crear el usuario y guardarlo en la base de datos
                 $user = User::create([
-                    'name' => $request->name,
-                    'email' => $request->email,
-                    // 'password' => bcrypt($request->password)
-                    'password' => Hash::make($request->password)
+                    'email' => $params->email,
+                    'password' => Hash::make($params->password),
+                    'persona_id' => $params->persona_id
                 ]);
 
                 $token = JWTAuth::fromUser($user);
+
+                // Commit de la transacción
+                DB::commit();
 
                 // Retornar una respuesta exitosa
                 $data = array(
@@ -59,6 +62,9 @@ class AuthController extends Controller
                     'token' => $token
                 );
             } catch (Exception $e) {
+                // Rollback de la transacción en caso de error
+                DB::rollBack();
+
                 // Manejo de excepciones
                 $data = array(
                     'status' => 'Error',
@@ -67,8 +73,9 @@ class AuthController extends Controller
                     'error' => $e->getMessage()
                 );
             }
-            return response()->json($data, $data['code']);
         }
+
+        return response()->json($data, $data['code']);
     }
 
     // Metodo de logueo

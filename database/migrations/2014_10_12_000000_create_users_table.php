@@ -14,11 +14,18 @@ return new class extends Migration
     public function up()
     {
         Schema::create('users', function (Blueprint $table) {
+
             $table->id();
-            $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
+            $table->unsignedBigInteger('persona_id'); // Define columna de clave foránea
+            // Crear la relación de clave foránea
+            $table->foreign('persona_id')->references('id')->on('personas')->onUpdate('cascade')->onDelete('restrict');
+
+            $table->integer('estado')->default(1);
+
             $table->rememberToken();
             $table->timestamps();
         });
