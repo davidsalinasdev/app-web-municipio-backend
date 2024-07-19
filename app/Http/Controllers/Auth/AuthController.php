@@ -115,4 +115,40 @@ class AuthController extends Controller
         );
         return response()->json($data, $data['code']);
     }
+
+    function logout(Request $request)
+    {
+        try {
+
+            // // Obtener el token del encabezado Authorization
+            // $token = $request->header('Authorization');
+
+            // $data = array(
+            //     'status' => 'success',
+            //     'code' => 200,
+            //     'message' => 'Logout exitoso',
+            //     'token' => $token
+            // );
+            // return response()->json($data, $data['code']);
+
+            // Invalidar el token del usuario autenticado
+            JWTAuth::invalidate(JWTAuth::getToken());
+
+            // Retornar una respuesta exitosa
+            $data = array(
+                'status' => 'success',
+                'code' => 200,
+                'message' => 'Logout exitoso'
+            );
+            return response()->json($data, $data['code']);
+        } catch (JWTException $e) {
+            // Manejo de excepciones si ocurre un error al invalidar el token
+            return response()->json([
+                'status' => 'Error',
+                'code' => 500,
+                'message' => 'Error al realizar logout',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

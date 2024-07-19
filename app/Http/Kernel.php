@@ -5,6 +5,11 @@ namespace App\Http;
 use App\Http\Middleware\JwtMiddleware;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
+//  Manejo de excepcione para relizar validaciones con request
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
+
+
 class Kernel extends HttpKernel
 {
     /**

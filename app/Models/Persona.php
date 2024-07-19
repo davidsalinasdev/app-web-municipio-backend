@@ -12,6 +12,18 @@ class Persona extends Model
     // 1.- indicamos la tabla que va a utilizar de la base de datos
     protected $table = 'personas';
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'nombres', // Agrega todos los campos que deseas permitir
+        'apellidos',
+        'carnet'
+        // otros campos que desees asignar masivamente
+    ];
+
 
     // RELACIONES
 

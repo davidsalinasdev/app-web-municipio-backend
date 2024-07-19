@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\PersonaController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,12 +26,19 @@ Route::post('login', [AuthController::class, 'login']);
 // Route::get('users', [UserController::class, 'index'])->middleware('jwt.verify');
 
 
+Route::get('logout', [AuthController::class, 'logout']);
 // MIDDLEWARE JWT PARA TODAS LAS RUTAS
 Route::middleware('jwt.verify')->group(function () {
 
     /**** Rutas para manejo de AUTENTICACIÓN ****/
-    Route::post('logout', [AuthController::class, 'logout']);
 
     /**** Rutas para manejo de USUARIOS ****/
-    Route::get('users', [UserController::class, 'index']);
+    // Route::get('users', [UserController::class, 'index']);
+
+    /**** Rutas para manejo de PERSONAS ****/
+    Route::resource('personas', 'App\Http\Controllers\PersonaController');
+    Route::get('/estado/personas', [PersonaController::class, 'funcionarioEstado']);
+
+    /**** Rutas para manejo de USUARIOS ****/
+    Route::resource('usuario', 'App\Http\Controllers\UserController');
 });

@@ -2,17 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\Persona;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use App\Http\Requests\Usuario\UsuarioStoreRequest;
-use App\Http\Requests\Usuario\UsuarioUpdateRequest;
-use Illuminate\Support\Facades\Validator;
 
-class UserController extends Controller
+
+class PersonaController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -21,12 +18,12 @@ class UserController extends Controller
      */
     public function index()
     {
-        $usuarios = User::with('persona')->orderBy('id', 'DESC')->get();
+        $persona = Persona::orderBy('id', 'DESC')->paginate(5);
 
         $data = array(
             'code' => 200,
             'status' => 'success',
-            'usuarios' => $usuarios
+            'persona' => $persona
         );
         return response()->json($data, $data['code']);
     }
@@ -34,24 +31,23 @@ class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \App\Http\Requests\Usuario\UsuarioStoreRequest  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(UsuarioStoreRequest $request)
+    public function store(Request $request)
     {
         // 1.-Recoge datos por post
-        $params = (object) $request->all(); // Devuelve un objeto con los datos validados
-
+        $params = (object) $request->all(); // Devuelve un objeto
 
         // Iniciar una transacción
         DB::beginTransaction();
 
         try {
             // Crear el usuario y guardarlo en la base de datos
-            $usuario = User::create([
-                'email' => $params->email,
-                'password' => Hash::make($params->password),
-                'persona_id' => $params->persona_id
+            $persona = Persona::create([
+                'nombres' => $params->nombres,
+                'apellidos' => $params->apellidos,
+                'carnet' => $params->carnet
             ]);
 
             // Commit de la transacción
@@ -61,8 +57,8 @@ class UserController extends Controller
             $data = array(
                 'status' => 'success',
                 'code' => 201,
-                'message' => 'Usuario registrado correctamente',
-                'usuario' => $usuario
+                'message' => 'Persona registrado correctamente',
+                'persona' => $persona
             );
         } catch (Exception $e) {
             // Rollback de la transacción en caso de error
@@ -70,9 +66,9 @@ class UserController extends Controller
 
             // Manejo de excepciones
             $data = array(
-                'status' => 'error',
+                'status' => 'Error',
                 'code' => 500,
-                'message' => 'Ocurrió un error al registrar al usuario',
+                'message' => 'Ocurrió un error al registrar a la persona',
                 'error' => $e->getMessage()
             );
         }
@@ -82,71 +78,62 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  int  $id
+     * @param  \App\Models\Persona  $persona
      * @return \Illuminate\Http\Response
      */
     public function show($id)
     {
         try {
-            $usuario = User::findOrFail($id);
+            $persona = Persona::findOrFail($id);
 
             $data = array(
                 'code' => 200,
                 'status' => 'success',
-                'usuario' => $usuario
+                'persona' => $persona
             );
         } catch (ModelNotFoundException $e) {
             $data = array(
                 'code' => 404,
                 'status' => 'error',
-                'message' => 'Usuario no encontrado'
+                'message' => 'Persona no encontrada'
             );
         } catch (Exception $e) {
             $data = array(
                 'code' => 500,
                 'status' => 'error',
-                'message' => 'Ocurrió un error al intentar recuperar el usuario',
+                'message' => 'Ocurrió un error al intentar recuperar la persona',
                 'error' => $e->getMessage()
             );
         }
         return response()->json($data, $data['code']);
     }
 
+
     /**
      * Update the specified resource in storage.
      *
-     * @param  \App\Http\Requests\Usuario\UsuarioUpdateRequest  $request
-     * @param  int  $id
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Persona  $persona
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id)
     {
         // Recoge datos por PUT o PATCH
-        $params = (object) $request->all(); // Devuelve un objeto con los datos validados
-
-        // 2.-Validar datos
-        $validate = Validator::make($request->all(), [
-            'email' => 'required|email|max:255|unique:usuarios,email,',
-            'password' => 'nullable|min:6|max:255',
-            'persona_id' => 'required|exists:personas,id',
-            'estado' => 'required',
-        ]);
+        $params = (object) $request->all(); // Devuelve un objeto
 
         // Iniciar una transacción
         DB::beginTransaction();
 
         try {
-            // Buscar el usuario en la base de datos
-            $usuario = User::findOrFail($id);
+            // Buscar la persona en la base de datos
+            $persona = Persona::findOrFail($id);
 
-            // Actualizar los datos del usuario
-            $usuario->email = $params->email;
-            if (!empty($params->password)) {
-                $usuario->password = bcrypt($params->password);
-            }
-            $usuario->persona_id = $params->persona_id;
-            $usuario->estado = $params->estado;
-            $usuario->save();
+            // Actualizar los datos de la persona
+            $persona->nombres = $params->nombres;
+            $persona->apellidos = $params->apellidos;
+            $persona->carnet = $params->carnet;
+            $persona->estado = $params->estado;
+            $persona->save();
 
             // Commit de la transacción
             DB::commit();
@@ -155,17 +142,17 @@ class UserController extends Controller
             $data = array(
                 'status' => 'success',
                 'code' => 200,
-                'message' => 'Usuario actualizado correctamente',
-                'usuario' => $usuario
+                'message' => 'Persona actualizada correctamente',
+                'persona' => $persona
             );
         } catch (ModelNotFoundException $e) {
-            // Rollback de la transacción en caso de que no se encuentre el usuario
+            // Rollback de la transacción en caso de que no se encuentre la persona
             DB::rollBack();
 
             $data = array(
                 'status' => 'error',
                 'code' => 404,
-                'message' => 'Usuario no encontrado'
+                'message' => 'Persona no encontrada'
             );
         } catch (Exception $e) {
             // Rollback de la transacción en caso de cualquier otro error
@@ -174,7 +161,7 @@ class UserController extends Controller
             $data = array(
                 'status' => 'error',
                 'code' => 500,
-                'message' => 'Ocurrió un error al actualizar el usuario',
+                'message' => 'Ocurrió un error al actualizar la persona',
                 'error' => $e->getMessage()
             );
         }
@@ -184,7 +171,7 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param  \App\Models\Persona  $persona
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)
@@ -193,12 +180,12 @@ class UserController extends Controller
         DB::beginTransaction();
 
         try {
-            // Buscar el usuario en la base de datos
-            $usuario = User::findOrFail($id);
+            // Buscar la persona en la base de datos
+            $persona = Persona::findOrFail($id);
 
-            // Actualizar el estado del usuario a "inactivo"
-            $usuario->estado = 0;
-            $usuario->save();
+            // Actualizar el estado de la persona a "inactivo"
+            $persona->estado = 0;
+            $persona->save();
 
             // Commit de la transacción
             DB::commit();
@@ -207,17 +194,17 @@ class UserController extends Controller
             $data = array(
                 'status' => 'success',
                 'code' => 200,
-                'message' => 'Usuario desactivado correctamente',
-                'usuario' => $usuario
+                'message' => 'Persona desactivada correctamente',
+                'persona' => $persona
             );
         } catch (ModelNotFoundException $e) {
-            // Rollback de la transacción en caso de que no se encuentre el usuario
+            // Rollback de la transacción en caso de que no se encuentre la persona
             DB::rollBack();
 
             $data = array(
                 'status' => 'error',
                 'code' => 404,
-                'message' => 'Usuario no encontrado'
+                'message' => 'Persona no encontrada'
             );
         } catch (Exception $e) {
             // Rollback de la transacción en caso de cualquier otro error
@@ -226,10 +213,24 @@ class UserController extends Controller
             $data = array(
                 'status' => 'error',
                 'code' => 500,
-                'message' => 'Ocurrió un error al desactivar el usuario',
+                'message' => 'Ocurrió un error al desactivar la persona',
                 'error' => $e->getMessage()
             );
         }
+        return response()->json($data, $data['code']);
+    }
+
+
+    public function funcionarioEstado()
+    {
+        $personas = Persona::where('estado', 1)
+            ->orderBy('id', 'DESC')->get();
+
+        $data = array(
+            'code' => 200,
+            'status' => 'success',
+            'personas' => $personas
+        );
         return response()->json($data, $data['code']);
     }
 }
