@@ -26,7 +26,6 @@ class Persona extends Model
 
 
     // RELACIONES
-
     /**
      * Obtener los usuarios para la persona.
      * Saca todos los usuarios relacionados con la persona

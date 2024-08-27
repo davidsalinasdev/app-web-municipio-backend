@@ -11,3 +11,7 @@
 -- php artisan make:middleware JwtMiddleware
 -- Activar el middleware en el kernel.php
 -- 'jwt.verify' => JwtMiddleware::class
+
+4.- Comando para crear Seeder
+-- php artisan make:seeder PersonasTableSeeder
+-- php artisan db:seed --class=PersonasTableSeeder (Ejecutar seeder)

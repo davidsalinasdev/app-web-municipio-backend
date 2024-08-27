@@ -1,8 +1,9 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\mercados\SectorController;
 use App\Http\Controllers\PersonaController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\TitularController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,8 +26,8 @@ Route::post('login', [AuthController::class, 'login']);
 // Route::resource('users', 'App\Http\Controllers\UserController')->middleware('jwt.verify');
 // Route::get('users', [UserController::class, 'index'])->middleware('jwt.verify');
 
-
 Route::get('logout', [AuthController::class, 'logout']);
+
 // MIDDLEWARE JWT PARA TODAS LAS RUTAS
 Route::middleware('jwt.verify')->group(function () {
 
@@ -41,4 +42,16 @@ Route::middleware('jwt.verify')->group(function () {
 
     /**** Rutas para manejo de USUARIOS ****/
     Route::resource('usuario', 'App\Http\Controllers\UserController');
+
+    /**** Rutas para manejo de SECCIÓN DE NOTICIAS ****/
+    Route::resource('seccion-noticias', 'App\Http\Controllers\SeccionNoticiaController');
+
+    // MERCADO
+    /**** Rutas para manejo de TITULAR ****/
+    Route::resource('mercado-titular', 'App\Http\Controllers\TitularController');
+    Route::post('/index-post/mercado-titular', [TitularController::class, 'indexPOST']);
+
+    /**** Rutas para manejo de SECTOR ****/
+    Route::resource('mercado-sector', 'App\Http\Controllers\mercados\SectorController');
+    Route::post('/index-post/mercado-sector', [SectorController::class, 'indexPOST']);
 });
