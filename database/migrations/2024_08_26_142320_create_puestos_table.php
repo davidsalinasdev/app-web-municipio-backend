@@ -14,7 +14,6 @@ return new class extends Migration
     public function up()
     {
         Schema::create('puestos', function (Blueprint $table) {
-
             $table->id();
             $table->string('nro_puesto', 250);
             // Crear la relación de clave foránea
@@ -30,9 +29,10 @@ return new class extends Migration
             $table->foreign('usuario_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('restrict');
 
             $table->double('precio_mensual');
-            $table->string('nro_contrato', 250);
-            $table->dateTime('fecha_ingreso');
+            $table->string('nro_contrato', 250)->unique();
+            $table->date('fecha_ingreso');
             $table->text('observaciones'); // Se utiliza TEXT para permitir contenido largo.
+            $table->integer('estado')->default(1);
             $table->timestamps();
         });
     }

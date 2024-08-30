@@ -12,10 +12,21 @@ use Illuminate\Support\Facades\Validator;
 
 class SectorController extends Controller
 {
+
+    public function index()
+    {
+        $sector = Sector::where('estado', 1)->orderBy('id', 'DESC')->get();
+        $data = array(
+            'code' => 200,
+            'status' => 'success',
+            'sector' => $sector
+        );
+        return response()->json($data, $data['code']);
+    }
+
     // Busqueda con data tables
     function indexPOST()
     {
-
         return datatables()->eloquent(Sector::query())->filter(function ($query) {
             if (request()->has('search') && request('search')) {
                 $searchTerm = request('search');

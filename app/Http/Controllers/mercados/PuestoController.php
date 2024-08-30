@@ -2,46 +2,55 @@
 
 namespace App\Http\Controllers\mercados;
 
-
 use App\Http\Controllers\Controller;
-
-use App\Models\mercados\Titular;
+use App\Models\mercados\Puesto;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
-class TitularController extends Controller
+class PuestoController extends Controller
 {
-
-    public function index()
-    {
-        $titular = Titular::where('estado', 1)->orderBy('id', 'DESC')->get();
-        $data = array(
-            'code' => 200,
-            'status' => 'success',
-            'titular' => $titular
-        );
-        return response()->json($data, $data['code']);
-    }
-
-
     // Busqueda con data tables
+    // function indexPOST()
+    // {
+
+    //     return datatables()->eloquent(Puesto::query())->filter(function ($query) {
+    //         if (request()->has('search') && request('search')) {
+    //             $searchTerm = request('search');
+    //             $query->where(function ($q) use ($searchTerm) {
+    //                 $q->where('nro_puesto', 'like', '%' . $searchTerm . '%')
+    //                     ->orWhere('nro_contrato', 'like', '%' . $searchTerm . '%')
+    //                     ->orWhere('titular_id', 'like', '%' . $searchTerm . '%')
+    //                     ->orWhere('fecha_ingreso', 'like', '%' . $searchTerm . '%');
+    //             });
+    //         }
+    //     })->toJson();
+    // }
+
     function indexPOST()
     {
-
-        return datatables()->eloquent(Titular::query())->filter(function ($query) {
+        return datatables()->eloquent(
+            Puesto::with('titular') // Aquí se incluye la relación
+                ->select('puestos.*') // Selecciona las columnas del modelo `Puesto`
+        )->filter(function ($query) {
             if (request()->has('search') && request('search')) {
                 $searchTerm = request('search');
                 $query->where(function ($q) use ($searchTerm) {
-                    $q->where('nombres', 'like', '%' . $searchTerm . '%')
-                        ->orWhere('apellidos', 'like', '%' . $searchTerm . '%')
-                        ->orWhere('carnet', 'like', '%' . $searchTerm . '%');
+                    $q->where('nro_puesto', 'like', '%' . $searchTerm . '%')
+                        ->orWhere('nro_contrato', 'like', '%' . $searchTerm . '%')
+                        ->orWhereHas('titular', function ($q) use ($searchTerm) {
+                            $q->where('nombres', 'like', '%' . $searchTerm . '%')
+                                ->orWhere('apellidos', 'like', '%' . $searchTerm . '%')
+                                ->orWhere('carnet', 'like', '%' . $searchTerm . '%');
+                        })
+                        ->orWhere('fecha_ingreso', 'like', '%' . $searchTerm . '%');
                 });
             }
         })->toJson();
     }
+
 
     /**
      * Store a newly created resource in storage.
@@ -54,12 +63,20 @@ class TitularController extends Controller
         // 1.-Recoge datos por post
         $params = (object) $request->all(); // Devuelve un objeto
 
+        // var_dump($params);
+        // die();
+
         $validate = Validator::make($request->all(), [
 
-            'nombres' => 'required',
-            'apellidos' => 'required',
-            'carnet' => 'required',
-            'usuario_id' => 'required'
+            'nro_puesto' => 'required',
+
+            'sector_id' => 'required',
+            'titular_id' => 'required',
+            'usuario_id' => 'required',
+
+            'precio_mensual' => 'required',
+            'fecha_ingreso' => 'required',
+            'observaciones' => 'required'
 
         ]);
 
@@ -81,13 +98,16 @@ class TitularController extends Controller
 
             try {
                 // Crear el usuario y guardarlo en la base de datos
-                $titular = new Titular();
-                $titular->nombres = $params->nombres;
-                $titular->apellidos = $params->apellidos;
-                $titular->carnet = $params->carnet;
-                $titular->usuario_id = $params->usuario_id;
-
-                $titular->save();
+                $puesto = new Puesto();
+                $puesto->nro_puesto = $params->nro_puesto;
+                $puesto->sector_id = $params->sector_id;
+                $puesto->titular_id = $params->titular_id;
+                $puesto->usuario_id = $params->usuario_id;
+                $puesto->precio_mensual = $params->precio_mensual;
+                $puesto->nro_contrato = $params->nro_contrato;
+                $puesto->fecha_ingreso = $params->fecha_ingreso;
+                $puesto->observaciones = $params->observaciones;
+                $puesto->save();
 
                 // Commit de la transacción
                 DB::commit();
@@ -96,8 +116,8 @@ class TitularController extends Controller
                 $data = array(
                     'status' => 'success',
                     'code' => 201,
-                    'message' => 'Titular registrado correctamente',
-                    'titular' => $titular
+                    'message' => 'Puesto registrado correctamente',
+                    'puesto' => $puesto
                 );
             } catch (Exception $e) {
                 // Rollback de la transacción en caso de error
@@ -107,7 +127,7 @@ class TitularController extends Controller
                 $data = array(
                     'status' => 'Error',
                     'code' => 500,
-                    'message' => 'Error al registrar al titular',
+                    'message' => 'Error al registrar el puesto',
                     'error' => $e->getMessage()
                 );
             }
@@ -118,30 +138,30 @@ class TitularController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Titular  $titular
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function show($id)
     {
         try {
-            $titular = Titular::findOrFail($id);
+            $puesto = Puesto::findOrFail($id);
 
             $data = array(
                 'code' => 200,
                 'status' => 'success',
-                'titular' => $titular
+                'puesto' => $puesto
             );
         } catch (ModelNotFoundException $e) {
             $data = array(
                 'code' => 404,
                 'status' => 'error',
-                'message' => 'Titular de puesto no encontrado'
+                'message' => 'Puesto no encontrado'
             );
         } catch (Exception $e) {
             $data = array(
                 'code' => 500,
                 'status' => 'error',
-                'message' => 'Ocurrió un error al intentar recuperar el titular de puesto',
+                'message' => 'Ocurrió un error al intentar recuperar el puesto',
                 'error' => $e->getMessage()
             );
         }
@@ -152,7 +172,7 @@ class TitularController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Titular  $titular
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, $id)
@@ -162,9 +182,15 @@ class TitularController extends Controller
 
         $validate = Validator::make($request->all(), [
 
-            'nombres' => 'required',
-            'apellidos' => 'required',
-            'carnet' => 'required',
+            'nro_puesto' => 'required',
+
+            'sector_id' => 'required',
+            'titular_id' => 'required',
+            'usuario_id' => 'required',
+
+            'precio_mensual' => 'required',
+            'fecha_ingreso' => 'required',
+            'observaciones' => 'required',
             'estado' => 'required'
         ]);
 
@@ -186,14 +212,18 @@ class TitularController extends Controller
 
             try {
                 // Buscar la persona en la base de datos
-                $titular = Titular::findOrFail($id);
+                $puesto = Puesto::findOrFail($id);
 
-                // Actualizar los datos de la seccion
-                $titular->nombres = $params->nombres;
-                $titular->apellidos = $params->apellidos;
-                $titular->carnet = $params->carnet;
-                $titular->estado = $params->estado;
-                $titular->save();
+                $puesto->nro_puesto = $params->nro_puesto;
+                $puesto->sector_id = $params->sector_id;
+                $puesto->titular_id = $params->titular_id;
+                $puesto->usuario_id = $params->usuario_id;
+                $puesto->precio_mensual = $params->precio_mensual;
+                $puesto->fecha_ingreso = $params->fecha_ingreso;
+                $puesto->nro_contrato = $params->nro_contrato;
+                $puesto->observaciones = $params->observaciones;
+                $puesto->estado = $params->estado;
+                $puesto->save();
 
                 // Commit de la transacción
                 DB::commit();
@@ -202,8 +232,8 @@ class TitularController extends Controller
                 $data = array(
                     'status' => 'success',
                     'code' => 200,
-                    'message' => 'El titular se actualizo correctamente',
-                    'titular' => $titular
+                    'message' => 'Puesto actualizado correctamente',
+                    'puesto' => $puesto
                 );
             } catch (ModelNotFoundException $e) {
                 // Rollback de la transacción en caso de que no se encuentre la persona
@@ -212,7 +242,7 @@ class TitularController extends Controller
                 $data = array(
                     'status' => 'error',
                     'code' => 404,
-                    'message' => 'Ocurrio un error al intentar actualizar titular del puesto del mercado',
+                    'message' => 'Ocurrio un error al intentar actualizar los datos del puesto',
                 );
             } catch (Exception $e) {
                 // Rollback de la transacción en caso de cualquier otro error
@@ -221,7 +251,7 @@ class TitularController extends Controller
                 $data = array(
                     'status' => 'error',
                     'code' => 500,
-                    'message' => 'Ocurrió un error al actualizar el titular',
+                    'message' => 'Ocurrió un error al actualizar el puesto',
                     'error' => $e->getMessage()
                 );
             }
@@ -232,7 +262,7 @@ class TitularController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Titular  $titular
+     * @param  int  $id
      * @return \Illuminate\Http\Response
      */
     public function destroy($id)
@@ -242,11 +272,11 @@ class TitularController extends Controller
 
         try {
             // Buscar la persona en la base de datos
-            $titular = Titular::findOrFail($id);
+            $puesto = Puesto::findOrFail($id);
 
             // Actualizar el estado de la seccion a "inactivo"
-            $titular->estado = 0;
-            $titular->save();
+            $puesto->estado = 0;
+            $puesto->save();
 
             // Commit de la transacción
             DB::commit();
@@ -256,7 +286,7 @@ class TitularController extends Controller
                 'status' => 'success',
                 'code' => 200,
                 'message' => 'Se desactivó correctamente',
-                'titular' => $titular
+                'puesto' => $puesto
             );
         } catch (ModelNotFoundException $e) {
             // Rollback de la transacción en caso de que no se encuentre la persona
@@ -265,7 +295,7 @@ class TitularController extends Controller
             $data = array(
                 'status' => 'error',
                 'code' => 404,
-                'message' => 'Titular no encontrado',
+                'message' => 'Puesto no encontrado',
             );
         } catch (Exception $e) {
             // Rollback de la transacción en caso de cualquier otro error
@@ -273,7 +303,7 @@ class TitularController extends Controller
             $data = array(
                 'status' => 'error',
                 'code' => 500,
-                'message' => 'Ocurrió un error al desactivar el titular del puesto del mercado',
+                'message' => 'Ocurrió un error al desactivar puesto del mercado',
                 'error' => $e->getMessage()
             );
         }

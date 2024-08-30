@@ -3,7 +3,8 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\mercados\SectorController;
 use App\Http\Controllers\PersonaController;
-use App\Http\Controllers\TitularController;
+use App\Http\Controllers\mercados\TitularController;
+use App\Http\Controllers\mercados\PuestoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -48,10 +49,14 @@ Route::middleware('jwt.verify')->group(function () {
 
     // MERCADO
     /**** Rutas para manejo de TITULAR ****/
-    Route::resource('mercado-titular', 'App\Http\Controllers\TitularController');
+    Route::resource('mercado-titular', 'App\Http\Controllers\mercados\TitularController');
     Route::post('/index-post/mercado-titular', [TitularController::class, 'indexPOST']);
 
     /**** Rutas para manejo de SECTOR ****/
     Route::resource('mercado-sector', 'App\Http\Controllers\mercados\SectorController');
     Route::post('/index-post/mercado-sector', [SectorController::class, 'indexPOST']);
+
+    /**** Rutas para manejo de PUESTO ****/
+    Route::resource('mercado-puesto', 'App\Http\Controllers\mercados\PuestoController');
+    Route::post('/index-post/mercado-puesto', [PuestoController::class, 'indexPOST']);
 });

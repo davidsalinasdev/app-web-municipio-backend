@@ -2,6 +2,7 @@
 
 1.- Crear un modelo y controlador con metodos por defecto para realizar APIS por defecto
 ---php artisan make:controller UserController --model=User --api
+---php artisan make:controller mercados/PuestoController --api
 
 2.- Comando para crear Request
 ---php artisan make:request Persona/PersonaStoreRequest

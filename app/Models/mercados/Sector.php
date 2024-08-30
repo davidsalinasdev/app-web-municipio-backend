@@ -2,7 +2,7 @@
 
 namespace App\Models\mercados;
 
-use App\Models\Puesto;
+use App\Models\mercados\Puesto;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
