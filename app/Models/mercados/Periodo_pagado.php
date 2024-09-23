@@ -2,24 +2,22 @@
 
 namespace App\Models\mercados;
 
-use App\Models\mercados\Puesto;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Multa extends Model
+class Periodo_pagado extends Model
 {
     use HasFactory;
 
-
     // 1.- indicamos la tabla que va a utilizar de la base de datos
-    protected $table = 'multas';
+    protected $table = 'periodo_pagados';
 
-    // RELACIONES
     /**
-     * Recibe a Puesto.
+     * Recibe a Pago.
      */
-    public function puesto()
+    public function pago()
     {
-        return $this->belongsTo(Puesto::class); // Recibe a puesto
+        return $this->belongsTo(Pago::class); // Recibe a pago
     }
 }

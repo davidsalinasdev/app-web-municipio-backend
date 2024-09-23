@@ -21,7 +21,8 @@ return new class extends Migration
             $table->foreign('puesto_id')->references('id')->on('puestos')->onUpdate('cascade')->onDelete('restrict');
             $table->double('monto_multa');
             $table->dateTime('fecha_generacion');
-            $table->string('periodos_afectados', 255);
+            $table->string('periodos_afectados', 1500);
+            $table->string('estado_multa'); /* Ej: 'pendiente', 'pagada' */
             $table->timestamps();
         });
     }

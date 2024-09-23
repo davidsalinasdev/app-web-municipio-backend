@@ -16,18 +16,18 @@ return new class extends Migration
         Schema::create('pagos', function (Blueprint $table) {
             $table->id();
             // Crear la relación de clave foránea
-            $table->unsignedBigInteger('puesto_id'); // Define columna de clave foránea
-            $table->foreign('puesto_id')->references('id')->on('puestos')->onUpdate('cascade')->onDelete('restrict');
+            $table->unsignedBigInteger('factura_id'); // Define columna de clave foránea
+            $table->foreign('factura_id')->references('id')->on('facturas')->onUpdate('cascade')->onDelete('restrict');
 
             // Quie registro el pago
             $table->unsignedBigInteger('usuario_id'); // Define columna de clave foránea
             $table->foreign('usuario_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('restrict');
 
-            $table->double('monto_pagado');
-            $table->dateTime('fecha_pagado');
-            $table->date('periodo');
-
-            $table->boolean('multa'); // Booleano o entero, si hubo multa en este pago
+            // Crear la relación de clave foránea
+            $table->unsignedBigInteger('multa_id')->nullable(); // Define columna de clave foránea
+            $table->foreign('multa_id')->references('id')->on('multas')->onUpdate('cascade')->onDelete('restrict');
+            $table->double('monto_pago');
+            $table->dateTime('fecha_pago');
             $table->timestamps();
         });
     }

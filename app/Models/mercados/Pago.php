@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\mercados;
 
+use App\Models\mercados\Periodo_pagado;
+use App\Models\mercados\Puesto;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,10 +17,18 @@ class Pago extends Model
 
     // RELACIONES
     /**
-     * Recibe a Puesto.
+     * Recibe a Factura.
      */
-    public function puesto()
+    public function factura()
     {
-        return $this->belongsTo(Puesto::class); // Recibe a puesto
+        return $this->belongsTo(Puesto::class); // Recibe a factura
+    }
+
+    /**
+     * Se dirige periodoPagado
+     */
+    public function periodoPagado()
+    {
+        return $this->hasMany(Periodo_pagado::class); // Se dirige a periodo_pagado
     }
 }

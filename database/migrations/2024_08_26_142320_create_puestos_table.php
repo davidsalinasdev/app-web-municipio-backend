@@ -31,6 +31,7 @@ return new class extends Migration
             $table->double('precio_mensual');
             $table->string('nro_contrato', 250)->unique();
             $table->date('fecha_ingreso');
+            $table->date('mes_inicio_cobro');
             $table->text('observaciones'); // Se utiliza TEXT para permitir contenido largo.
             $table->integer('estado')->default(1);
             $table->timestamps();

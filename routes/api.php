@@ -59,4 +59,10 @@ Route::middleware('jwt.verify')->group(function () {
     /**** Rutas para manejo de PUESTO ****/
     Route::resource('mercado-puesto', 'App\Http\Controllers\mercados\PuestoController');
     Route::post('/index-post/mercado-puesto', [PuestoController::class, 'indexPOST']);
+
+    /**** Ruta para generar multa ****/
+    Route::resource('generar-multa', 'App\Http\Controllers\mercados\GenerarMultaReciboController');
+
+    /**** Ruta para generar cobro ****/
+    Route::resource('generar-cobro', 'App\Http\Controllers\mercados\GenerarCobroController');
 });

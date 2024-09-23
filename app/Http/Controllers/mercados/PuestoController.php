@@ -4,6 +4,7 @@ namespace App\Http\Controllers\mercados;
 
 use App\Http\Controllers\Controller;
 use App\Models\mercados\Puesto;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -12,22 +13,6 @@ use Illuminate\Support\Facades\Validator;
 
 class PuestoController extends Controller
 {
-    // Busqueda con data tables
-    // function indexPOST()
-    // {
-
-    //     return datatables()->eloquent(Puesto::query())->filter(function ($query) {
-    //         if (request()->has('search') && request('search')) {
-    //             $searchTerm = request('search');
-    //             $query->where(function ($q) use ($searchTerm) {
-    //                 $q->where('nro_puesto', 'like', '%' . $searchTerm . '%')
-    //                     ->orWhere('nro_contrato', 'like', '%' . $searchTerm . '%')
-    //                     ->orWhere('titular_id', 'like', '%' . $searchTerm . '%')
-    //                     ->orWhere('fecha_ingreso', 'like', '%' . $searchTerm . '%');
-    //             });
-    //         }
-    //     })->toJson();
-    // }
 
     function indexPOST()
     {
@@ -63,17 +48,15 @@ class PuestoController extends Controller
         // 1.-Recoge datos por post
         $params = (object) $request->all(); // Devuelve un objeto
 
-        // var_dump($params);
+        // print_r($params);
         // die();
 
         $validate = Validator::make($request->all(), [
 
             'nro_puesto' => 'required',
-
             'sector_id' => 'required',
             'titular_id' => 'required',
             'usuario_id' => 'required',
-
             'precio_mensual' => 'required',
             'fecha_ingreso' => 'required',
             'observaciones' => 'required'
@@ -105,7 +88,24 @@ class PuestoController extends Controller
                 $puesto->usuario_id = $params->usuario_id;
                 $puesto->precio_mensual = $params->precio_mensual;
                 $puesto->nro_contrato = $params->nro_contrato;
-                $puesto->fecha_ingreso = $params->fecha_ingreso;
+
+                $fechaIngreso = $params->fecha_ingreso; // '05/06/2024'
+                $fechaConvertida = \Carbon\Carbon::createFromFormat('d/m/Y', $fechaIngreso)->format('Y-m-d'); // '2024-06-05'
+
+                $puesto->fecha_ingreso = $fechaConvertida;
+
+                // Obtener la fecha actual del servidor
+                $fechaActual = Carbon::now();
+                // Convertir la fecha actual al primer día del mes siguiente
+                $fechaInicioCobro = $fechaActual
+                    ->startOfMonth() // Ubicamos en el primer día del mes actual
+                    ->addMonth() // Añadimos un mes
+                    ->format('Y-m-d'); // Formateamos la fecha en 'Y-m-d'
+
+                // Dato importante
+                $puesto->mes_inicio_cobro = $fechaInicioCobro;
+
+
                 $puesto->observaciones = $params->observaciones;
                 $puesto->save();
 
