@@ -63,6 +63,9 @@ Route::middleware('jwt.verify')->group(function () {
     /**** Ruta para generar multa ****/
     Route::resource('generar-multa', 'App\Http\Controllers\mercados\GenerarMultaReciboController');
 
-    /**** Ruta para generar cobro ****/
+    /**** Ruta para generar cobro por mes ****/
     Route::resource('generar-cobro', 'App\Http\Controllers\mercados\GenerarCobroController');
+
+    /**** Ruta para generar Pagos cada ves ue se  haga un pago ****/
+    Route::resource('generar-pagos', 'App\Http\Controllers\mercados\PagosController');
 });

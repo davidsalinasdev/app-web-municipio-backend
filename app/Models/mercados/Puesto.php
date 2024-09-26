@@ -2,8 +2,6 @@
 
 namespace App\Models\mercados;
 
-use App\Models\Multa;
-use App\Models\Pago;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -41,6 +39,15 @@ class Puesto extends Model
     {
         return $this->hasMany(Multa::class); //Se dirige Multa
     }
+
+    /**
+     * Se dirige hacia Factura
+     */
+    public function factura()
+    {
+        return $this->hasMany(Factura::class); //Se dirige Factura
+    }
+
 
 
     /**

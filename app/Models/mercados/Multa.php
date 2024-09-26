@@ -22,4 +22,9 @@ class Multa extends Model
     {
         return $this->belongsTo(Puesto::class); // Recibe a puesto
     }
+
+    public function pago()
+    {
+        return $this->hasMany(Pago::class); // se dirige hacia Generars
+    }
 }

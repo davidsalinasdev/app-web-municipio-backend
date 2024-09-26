@@ -22,10 +22,17 @@ return new class extends Migration
             $table->unsignedBigInteger('usuario_id')->nullable(true); // Define columna de clave foránea
             $table->foreign('usuario_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('restrict');
 
+            // Relación con la tabla puestos
+            $table->unsignedBigInteger('puesto_id'); // Define columna de clave foránea
+            $table->foreign('puesto_id')->references('id')->on('puestos')->onUpdate('cascade')->onDelete('restrict');
+
             // $table->date('fecha_vencimiento');
             // $table->double('total');
             // $table->text('observaciones');
             $table->integer('estado_pago')->default(0);
+
+            $table->integer('analizado_multa')->default(0);
+
             $table->timestamps();
         });
     }

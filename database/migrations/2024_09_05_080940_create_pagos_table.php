@@ -26,6 +26,12 @@ return new class extends Migration
             // Crear la relación de clave foránea
             $table->unsignedBigInteger('multa_id')->nullable(); // Define columna de clave foránea
             $table->foreign('multa_id')->references('id')->on('multas')->onUpdate('cascade')->onDelete('restrict');
+
+            // Crear la relación de clave foránea
+            // Relación con la tabla puestos
+            $table->unsignedBigInteger('puesto_id'); // Define columna de clave foránea
+            $table->foreign('puesto_id')->references('id')->on('puestos')->onUpdate('cascade')->onDelete('restrict');
+
             $table->double('monto_pago');
             $table->dateTime('fecha_pago');
             $table->timestamps();

@@ -68,6 +68,7 @@ class GenerarCobroController extends Controller
 
                         // Crear una nueva factura
                         $factura = new Factura();
+                        $factura->puesto_id = $element->id;
                         $factura->nro_recibo = null;
                         $factura->fecha_emision = null;
                         $factura->usuario_id = null;
@@ -85,25 +86,39 @@ class GenerarCobroController extends Controller
                         $element->mes_inicio_cobro = Carbon::now()->startOfMonth()->format('Y-m-d');
                         $element->save();
 
-                        // Verificar facturas no pagadas en los últimos 2 meses para generar multas
-                        $facturasSinPagar = DB::table('facturas')
-                            ->leftJoin('pagos', 'facturas.id', '=', 'pagos.factura_id')
-                            ->whereNull('pagos.id') // Sin pago
-                            ->where('facturas.id', $factura->id)
-                            ->where('facturas.created_at', '<=', Carbon::now()->subMonths(2))
-                            ->get();
+                        // Verificar si el puesto tiene más de dos facturas sin pagar
+                        $facturasSinPagar = DB::table('facturas as f')
+                            ->join('detalle_facturas as df', 'f.id', '=', 'df.factura_id')  // Join con detalle_factura
+                            ->where('f.puesto_id', $element->id)  // Reemplaza $puesto_id con el valor del puesto
+                            ->where('f.estado_pago', 0)  // Facturas no pagadas
+                            ->orderBy('f.created_at', 'asc')  // Ordenar por fecha de creación de manera ascendente
+                            ->select('f.*', 'df.periodo')  // Seleccionar todos los campos de facturas y el campo periodo
+                            ->get();  // Obtener los resultados
 
-                        foreach ($facturasSinPagar as $facturaPendiente) {
-                            // Verificar si ya existe una multa para esta factura
-                            $multaExistente = Multa::where('factura_id', $facturaPendiente->id)->first();
+                        // Agrupar facturas en pares de dos
+                        $facturasAgrupadas = $facturasSinPagar->chunk(2);
 
-                            if (!$multaExistente) {
-                                // Crear la multa
-                                $multa = new Multa();
-                                $multa->factura_id = $facturaPendiente->id;
-                                $multa->fecha_multa = Carbon::now();
-                                $multa->monto_multa = 50; // Ajusta el monto según la lógica de tu negocio
-                                $multa->save();
+                        foreach ($facturasAgrupadas as $grupoFacturas) {
+                            // Asegúrate de que el grupo tenga exactamente 2 facturas
+                            if ($grupoFacturas->count() == 2) {
+                                // Crear un registro de multa
+                                $montoMulta = 50;  // Por ejemplo, puedes calcular este valor según tu lógica
+
+                                $periodosAfectados = $grupoFacturas->pluck('periodo')->implode(', ');  // Obtener los periodos afectados de las facturas
+
+                                // Insertar la multa en la base de datos
+                                DB::table('multas')->insert([
+                                    'puesto_id' => $element->id,
+                                    'monto_multa' => $montoMulta,
+                                    'fecha_generacion' => Carbon::now(),
+                                    'periodos_afectados' => $periodosAfectados,
+                                    'estado_multa' => 'Pendiente',
+                                ]);
+
+                                // Opcional: Marcar estas facturas como "analizadas" o agregar algún flag
+                                DB::table('facturas')
+                                    ->whereIn('id', $grupoFacturas->pluck('id'))
+                                    ->update(['analizado_multa' => 0]);  // Usar un valor especial para indicar que ya se han procesado
                             }
                         }
                     }
@@ -129,7 +144,7 @@ class GenerarCobroController extends Controller
 
                 // Manejo de excepciones
                 $data = array(
-                    'status' => 'Error',
+                    'status' => 'error',
                     'code' => 500,
                     'message' => 'Error al registrar el cobro',
                     'error' => $e->getMessage()
@@ -138,6 +153,7 @@ class GenerarCobroController extends Controller
             return response()->json($data, $data['code']);
         }
     }
+
 
 
     /**

@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use App\Models\mercados\Generar;
+use App\Models\mercados\Pago;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -71,5 +72,11 @@ class User extends Authenticatable implements JWTSubject
     public function generar()
     {
         return $this->hasMany(Generar::class); // se dirige hacia Generars
+    }
+
+
+    public function pago()
+    {
+        return $this->hasMany(Pago::class); // se dirige hacia pago
     }
 }

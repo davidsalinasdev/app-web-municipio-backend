@@ -28,4 +28,12 @@ class Factura extends Model
     {
         return $this->hasMany(Pago::class); // Se dirige a pagos
     }
+
+    /**
+     * Recibe a puesto
+     */
+    public function puesto()
+    {
+        return $this->belongsTo(Puesto::class); // Recibe a puesto
+    }
 }
