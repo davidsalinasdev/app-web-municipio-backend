@@ -36,121 +36,167 @@ class GenerarCobroController extends Controller
 
     public function store(Request $request)
     {
-        // Recoge datos por post
-        $params = (object) $request->all();
 
-        $validate = Validator::make($request->all(), [
-            'id' => 'required',
-        ]);
+        // Obtener la fecha actual y extraer el mes y el año
 
-        if ($validate->fails()) {
+        // $fechaActualMes = Carbon::now();
+        // $mesActual = $fechaActualMes->month; // Obtiene el número del mes (1-12)
+        // $añoActual = $fechaActualMes->year; // Obtiene el año
+
+        // // Consulta para verificar si existe algún registro con el mismo mes y año
+        // $existeFecha = Generar::whereMonth('fecha_generacion_cobro', $mesActual)
+        //     ->whereYear('fecha_generacion_cobro', $añoActual)
+        //     ->exists();
+
+
+
+        // Obtener la fecha actual del servidor
+        $fecha1 = Carbon::today(); // o Carbon::now() si también quieres comparar con hora
+
+        // Hacer una consulta directa que compare mes y año en la base de datos
+        $registros = Generar::whereYear('fecha_generacion_cobro', $fecha1->year)
+            ->whereMonth('fecha_generacion_cobro', $fecha1->month)
+            ->get();
+
+
+        // echo count($registros);
+        // echo "</br>";
+
+        // // Mostrar los registros que coinciden
+        // foreach ($registros as $registro) {
+        //     echo "El registro con ID: " . $registro->id . " tiene el mismo mes y año.\n";
+        // }
+        // die();
+
+        if (count($registros) >= 1) {   // Cuando es true no pasa
             $data = array(
                 'status' => 'error',
                 'code' => 400,
-                'message' => 'Los datos enviados no son correctos.',
-                'errors' => $validate->errors()
+                'message' => 'Ya se generó el cobro para este mes.',
             );
             return response()->json($data, $data['code']);
         } else {
+            // La fecha no existe
+            // Recoge datos por post
+            $params = (object) $request->all();
 
-            // Iniciar una transacción
-            DB::beginTransaction();
+            $validate = Validator::make($request->all(), [
+                'id' => 'required',
+            ]);
 
-            try {
-                // Recorrer todos los puestos activos
-                $puestos = Puesto::where('estado', 1)->get();
+            if ($validate->fails()) {
+                $data = array(
+                    'status' => 'error',
+                    'code' => 400,
+                    'message' => 'Los datos enviados no son correctos.',
+                    'errors' => $validate->errors()
+                );
+                return response()->json($data, $data['code']);
+            } else {
 
-                foreach ($puestos as $element) {
-                    $mesCobro = Carbon::parse($element->mes_inicio_cobro);
-                    $fechaActual = Carbon::now()->startOfMonth();
+                // Iniciar una transacción
+                DB::beginTransaction();
 
-                    if ($mesCobro->lessThan($fechaActual)) {
+                try {
+                    // Recorrer todos los puestos activos
+                    $puestos = Puesto::where('estado', 1)->get();
 
-                        // Crear una nueva factura
-                        $factura = new Factura();
-                        $factura->puesto_id = $element->id;
-                        $factura->nro_recibo = null;
-                        $factura->fecha_emision = null;
-                        $factura->usuario_id = null;
-                        $factura->save();
+                    foreach ($puestos as $element) {
 
-                        // Crear el detalle de factura
-                        $detalleFactura = new Detalle_factura();
-                        $detalleFactura->factura_id = $factura->id;
-                        $detalleFactura->puesto_id = $element->id;
-                        $detalleFactura->periodo = $mesCobro->format('Y-m');
-                        $detalleFactura->precio = $element->precio_mensual;
-                        $detalleFactura->save();
+                        $mesCobro = Carbon::parse($element->mes_inicio_cobro);
 
-                        // Actualizar el mes de cobro al actual
-                        $element->mes_inicio_cobro = Carbon::now()->startOfMonth()->format('Y-m-d');
-                        $element->save();
+                        // Obtener la fecha actual, al inicio del mes
+                        $fechaActual = Carbon::now()->startOfMonth()->toDateString(); // Formato 'YYYY-MM-DD'
 
-                        // Verificar si el puesto tiene más de dos facturas sin pagar
-                        $facturasSinPagar = DB::table('facturas as f')
-                            ->join('detalle_facturas as df', 'f.id', '=', 'df.factura_id')  // Join con detalle_factura
-                            ->where('f.puesto_id', $element->id)  // Reemplaza $puesto_id con el valor del puesto
-                            ->where('f.estado_pago', 0)  // Facturas no pagadas
-                            ->orderBy('f.created_at', 'asc')  // Ordenar por fecha de creación de manera ascendente
-                            ->select('f.*', 'df.periodo')  // Seleccionar todos los campos de facturas y el campo periodo
-                            ->get();  // Obtener los resultados
+                        if ($mesCobro->lessThan($fechaActual)) {
 
-                        // Agrupar facturas en pares de dos
-                        $facturasAgrupadas = $facturasSinPagar->chunk(2);
+                            // Crear una nueva factura
+                            $factura = new Factura();
+                            $factura->puesto_id = $element->id;
+                            $factura->nro_recibo = null;
+                            $factura->fecha_emision = null;
+                            $factura->usuario_id = null;
+                            $factura->save();
 
-                        foreach ($facturasAgrupadas as $grupoFacturas) {
-                            // Asegúrate de que el grupo tenga exactamente 2 facturas
-                            if ($grupoFacturas->count() == 2) {
-                                // Crear un registro de multa
-                                $montoMulta = 50;  // Por ejemplo, puedes calcular este valor según tu lógica
+                            // Crear el detalle de factura
+                            $detalleFactura = new Detalle_factura();
+                            $detalleFactura->factura_id = $factura->id;
+                            $detalleFactura->puesto_id = $element->id;
+                            $detalleFactura->periodo = $mesCobro->format('Y-m');
+                            $detalleFactura->precio = $element->precio_mensual;
+                            $detalleFactura->save();
 
-                                $periodosAfectados = $grupoFacturas->pluck('periodo')->implode(', ');  // Obtener los periodos afectados de las facturas
+                            // Actualizar el mes de cobro al actual
+                            $element->mes_inicio_cobro = Carbon::now()->startOfMonth()->format('Y-m-d');
+                            $element->save();
 
-                                // Insertar la multa en la base de datos
-                                DB::table('multas')->insert([
-                                    'puesto_id' => $element->id,
-                                    'monto_multa' => $montoMulta,
-                                    'fecha_generacion' => Carbon::now(),
-                                    'periodos_afectados' => $periodosAfectados,
-                                    'estado_multa' => 'Pendiente',
-                                ]);
+                            // Verificar si el puesto tiene más de dos facturas sin pagar y sin analizar
+                            $facturasSinPagar = DB::table('facturas as f')
+                                ->join('detalle_facturas as df', 'f.id', '=', 'df.factura_id')  // Join con detalle_factura
+                                ->where('f.puesto_id', $element->id)  // Reemplaza $puesto_id con el valor del puesto
+                                ->where('f.estado_pago', 0)  // Facturas no pagadas
+                                ->where('f.analizado_multa', 0)  // Facturas no analizadas
+                                ->orderBy('f.created_at', 'asc')  // Ordenar por fecha de creación de manera ascendente
+                                ->select('f.*', 'df.periodo')  // Seleccionar todos los campos de facturas y el campo periodo
+                                ->get();  // Obtener los resultados
 
-                                // Opcional: Marcar estas facturas como "analizadas" o agregar algún flag
-                                DB::table('facturas')
-                                    ->whereIn('id', $grupoFacturas->pluck('id'))
-                                    ->update(['analizado_multa' => 0]);  // Usar un valor especial para indicar que ya se han procesado
+                            // Agrupar facturas en pares de dos
+                            $facturasAgrupadas = $facturasSinPagar->chunk(2);
+
+                            foreach ($facturasAgrupadas as $grupoFacturas) {
+                                // Asegúrate de que el grupo tenga exactamente 2 facturas
+                                if ($grupoFacturas->count() == 2) {
+                                    // Crear un registro de multa
+                                    $montoMulta = 50;  // Por ejemplo, puedes calcular este valor según tu lógica
+
+                                    $periodosAfectados = $grupoFacturas->pluck('periodo')->implode(', ');  // Obtener los periodos afectados de las facturas
+
+                                    // Insertar la multa en la base de datos
+                                    DB::table('multas')->insert([
+                                        'puesto_id' => $element->id,
+                                        'monto_multa' => $montoMulta,
+                                        'fecha_generacion' => Carbon::now(),
+                                        'periodos_afectados' => $periodosAfectados,
+                                        'estado_multa' => 'Pendiente',
+                                    ]);
+
+                                    // Opcional: Marcar estas facturas como "analizadas" o agregar algún flag
+                                    DB::table('facturas')
+                                        ->whereIn('id', $grupoFacturas->pluck('id'))
+                                        ->update(['analizado_multa' => 1]);  // Usar un valor especial para indicar que ya se han procesado
+                                }
                             }
                         }
                     }
+
+                    // Registrar la generación del cobro
+                    $generar = new Generar();
+                    $generar->usuario_id = $params->id;
+                    $generar->fecha_generacion_cobro = Carbon::now();
+                    $generar->save();
+
+                    // Confirmar la transacción
+                    DB::commit();
+
+                    $data = array(
+                        'status' => 'success',
+                        'code' => 201,
+                        'message' => 'Periodo de cobro generado correctamente',
+                    );
+                } catch (Exception $e) {
+                    // Rollback de la transacción en caso de error
+                    DB::rollBack();
+
+                    // Manejo de excepciones
+                    $data = array(
+                        'status' => 'error',
+                        'code' => 500,
+                        'message' => 'Error al registrar el cobro',
+                        'error' => $e->getMessage()
+                    );
                 }
-
-                // Registrar la generación del cobro
-                $generar = new Generar();
-                $generar->usuario_id = $params->id;
-                $generar->fecha_generacion_cobro = Carbon::now();
-                $generar->save();
-
-                // Confirmar la transacción
-                DB::commit();
-
-                $data = array(
-                    'status' => 'success',
-                    'code' => 201,
-                    'message' => 'Periodo de cobro generado correctamente',
-                );
-            } catch (Exception $e) {
-                // Rollback de la transacción en caso de error
-                DB::rollBack();
-
-                // Manejo de excepciones
-                $data = array(
-                    'status' => 'error',
-                    'code' => 500,
-                    'message' => 'Error al registrar el cobro',
-                    'error' => $e->getMessage()
-                );
+                return response()->json($data, $data['code']);
             }
-            return response()->json($data, $data['code']);
         }
     }
 

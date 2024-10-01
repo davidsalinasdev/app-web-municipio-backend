@@ -100,6 +100,77 @@ class PagosController extends Controller
         }
     }
 
+
+    function getRecibosSinPagar(Request $request)
+    {
+
+        // 1.-Recoge datos por post
+        $params = (object) $request->all(); // Devuelve un objeto
+
+        $validate = Validator::make($request->all(), [
+
+            'puesto_carnet' => 'required'
+
+        ]);
+
+        // 3.- SI LA VALIDACION FUE CORRECTA
+        // Comprobar si los datos son validos
+        if ($validate->fails()) { // en caso si los datos fallan la validacion
+
+            $data = array(
+                'status' => 'error',
+                'code' => 400,
+                'message' => 'Los datos enviados no son correctos.',
+                'errors' => $validate->errors()
+            );
+            return response()->json($data, $data['code']);
+        } else {
+
+            // Iniciar una transacción
+            DB::beginTransaction();
+
+            try {
+
+
+                // Verificar si el puesto tiene más de dos facturas sin pagar y sin analizar
+                $facturasSinPagar = DB::table('facturas as f')
+                    ->join('detalle_facturas as df', 'f.id', '=', 'df.factura_id')  // Join con detalle_factura
+                    ->where('f.puesto_id', 1)  // Reemplaza $puesto_id con el valor del puesto
+                    ->where('f.estado_pago', 0)  // Facturas no pagadas
+                    ->where('f.analizado_multa', 0)  // Facturas no analizadas
+                    ->orderBy('f.created_at', 'asc')  // Ordenar por fecha de creación de manera ascendente
+                    ->select('f.*', 'df.periodo')  // Seleccionar todos los campos de facturas y el campo periodo
+                    ->get();  // Obtener los resultados
+
+                // Commit de la transacción
+                DB::commit();
+
+                // Retornar una respuesta exitosa
+                $data = array(
+                    'status' => 'success',
+                    'code' => 201,
+                    'message' => 'El pago se genero correctamente',
+                    'facturasSinPagar' => $facturasSinPagar
+                );
+            } catch (Exception $e) {
+                // Rollback de la transacción en caso de error
+                DB::rollBack();
+
+                // Manejo de excepciones
+                $data = array(
+                    'status' => 'Error',
+                    'code' => 500,
+                    'message' => 'Error al registrar el puesto',
+                    'error' => $e->getMessage()
+                );
+            }
+            return response()->json($data, $data['code']);
+        }
+    }
+
+
+
+
     /**
      * Display the specified resource.
      *
