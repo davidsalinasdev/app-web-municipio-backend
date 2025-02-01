@@ -198,6 +198,7 @@ return [
         App\Providers\RouteServiceProvider::class,
         // JWT
         Tymon\JWTAuth\Providers\LaravelServiceProvider::class,
+        \Barryvdh\DomPDF\ServiceProvider::class,
 
     ],
 

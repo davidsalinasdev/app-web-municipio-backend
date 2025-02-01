@@ -17,7 +17,7 @@ class PuestoController extends Controller
     function indexPOST()
     {
         return datatables()->eloquent(
-            Puesto::with('titular') // Aquí se incluye la relación
+            Puesto::with('titular', 'sector') // Aquí se incluye la relación
                 ->select('puestos.*') // Selecciona las columnas del modelo `Puesto`
         )->filter(function ($query) {
             if (request()->has('search') && request('search')) {

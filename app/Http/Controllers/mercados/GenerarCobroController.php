@@ -37,38 +37,25 @@ class GenerarCobroController extends Controller
     public function store(Request $request)
     {
 
-        // Obtener la fecha actual y extraer el mes y el año
+        // Convertir fecha a objeto Carbon
+        $fecha = Carbon::parse($request->fecha_actual);
 
-        // $fechaActualMes = Carbon::now();
-        // $mesActual = $fechaActualMes->month; // Obtiene el número del mes (1-12)
-        // $añoActual = $fechaActualMes->year; // Obtiene el año
-
-        // // Consulta para verificar si existe algún registro con el mismo mes y año
-        // $existeFecha = Generar::whereMonth('fecha_generacion_cobro', $mesActual)
-        //     ->whereYear('fecha_generacion_cobro', $añoActual)
-        //     ->exists();
-
-
-
-        // Obtener la fecha actual del servidor
-        $fecha1 = Carbon::today(); // o Carbon::now() si también quieres comparar con hora
-
-        // Hacer una consulta directa que compare mes y año en la base de datos
-        $registros = Generar::whereYear('fecha_generacion_cobro', $fecha1->year)
-            ->whereMonth('fecha_generacion_cobro', $fecha1->month)
+        // Consulta a la base de datos
+        $registros = Generar::whereYear('fecha_generacion_cobro', $fecha->year)
+            ->whereMonth('fecha_generacion_cobro', $fecha->month)
             ->get();
 
+        // return response()->json([
+        //     'status' => 'success',
+        //     'code' => 200,
+        //     'message' => 'Llego Correctamente',
+        //     'id' => $request->id,
+        //     'fecha' => $fecha,
+        //     'registros' => $registros,
+        // ]);
 
-        // echo count($registros);
-        // echo "</br>";
+        if (count($registros) > 0) {   // Cuando es true no pasa
 
-        // // Mostrar los registros que coinciden
-        // foreach ($registros as $registro) {
-        //     echo "El registro con ID: " . $registro->id . " tiene el mismo mes y año.\n";
-        // }
-        // die();
-
-        if (count($registros) >= 1) {   // Cuando es true no pasa
             $data = array(
                 'status' => 'error',
                 'code' => 400,
@@ -82,6 +69,7 @@ class GenerarCobroController extends Controller
 
             $validate = Validator::make($request->all(), [
                 'id' => 'required',
+                'fecha_actual' => 'required'
             ]);
 
             if ($validate->fails()) {
@@ -94,8 +82,9 @@ class GenerarCobroController extends Controller
                 return response()->json($data, $data['code']);
             } else {
 
+
                 // Iniciar una transacción
-                DB::beginTransaction();
+                DB::beginTransaction(); //1.- Iniciar una transacción
 
                 try {
                     // Recorrer todos los puestos activos
@@ -103,12 +92,19 @@ class GenerarCobroController extends Controller
 
                     foreach ($puestos as $element) {
 
-                        $mesCobro = Carbon::parse($element->mes_inicio_cobro);
+                        $mesCobro = Carbon::parse($element->mes_inicio_cobro); // Example Mes a cobrar 2025-01-01'
 
                         // Obtener la fecha actual, al inicio del mes
-                        $fechaActual = Carbon::now()->startOfMonth()->toDateString(); // Formato 'YYYY-MM-DD'
+                        $fechaActual = Carbon::now()->startOfMonth()->toDateString(); // Formato 'YYYY-MM-DD' **tests 0000-12-01** Siempre el 1 de cada mes actual
 
+
+                        /**
+                         * método lessThan() de un objeto, generalmente se utiliza para comparar dos fechas y determinar 
+                         * si la primera es menor que la segunda.  (2025-01-01->lessThan 025-02-01)
+                         */
                         if ($mesCobro->lessThan($fechaActual)) {
+
+
 
                             // Crear una nueva factura
                             $factura = new Factura();
@@ -118,17 +114,30 @@ class GenerarCobroController extends Controller
                             $factura->usuario_id = null;
                             $factura->save();
 
+
                             // Crear el detalle de factura
                             $detalleFactura = new Detalle_factura();
                             $detalleFactura->factura_id = $factura->id;
+                            // $detalleFactura->factura_id = 1;
                             $detalleFactura->puesto_id = $element->id;
                             $detalleFactura->periodo = $mesCobro->format('Y-m');
                             $detalleFactura->precio = $element->precio_mensual;
                             $detalleFactura->save();
 
+                            // AQUI EL ERROR ESTÁ EN EL DETALLE DE FACTURA(SE TIENE QUE INICIALIZAR EN HEIDI num_detalle AUTOINCREMENT)
+                            // return response()->json([
+                            //     'status' => 'success',
+                            //     'code' => 200,
+                            //     'prueba' => 'Los datos son correctos',
+                            //     'detalle' => $detalleFactura
+                            // ], 200);
+
+
+
                             // Actualizar el mes de cobro al actual
                             $element->mes_inicio_cobro = Carbon::now()->startOfMonth()->format('Y-m-d');
                             $element->save();
+
 
                             // Verificar si el puesto tiene más de dos facturas sin pagar y sin analizar
                             $facturasSinPagar = DB::table('facturas as f')
@@ -140,8 +149,10 @@ class GenerarCobroController extends Controller
                                 ->select('f.*', 'df.periodo')  // Seleccionar todos los campos de facturas y el campo periodo
                                 ->get();  // Obtener los resultados
 
+
                             // Agrupar facturas en pares de dos
                             $facturasAgrupadas = $facturasSinPagar->chunk(2);
+
 
                             foreach ($facturasAgrupadas as $grupoFacturas) {
                                 // Asegúrate de que el grupo tenga exactamente 2 facturas
@@ -176,7 +187,7 @@ class GenerarCobroController extends Controller
                     $generar->save();
 
                     // Confirmar la transacción
-                    DB::commit();
+                    DB::commit(); // 2.- No se necesita confirmar la transacción
 
                     $data = array(
                         'status' => 'success',
@@ -185,7 +196,7 @@ class GenerarCobroController extends Controller
                     );
                 } catch (Exception $e) {
                     // Rollback de la transacción en caso de error
-                    DB::rollBack();
+                    DB::rollBack(); // 3.- No se necesita confirmar la transacción
 
                     // Manejo de excepciones
                     $data = array(
@@ -198,41 +209,5 @@ class GenerarCobroController extends Controller
                 return response()->json($data, $data['code']);
             }
         }
-    }
-
-
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
     }
 }

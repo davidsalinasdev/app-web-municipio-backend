@@ -3,12 +3,7 @@
 namespace App\Http\Controllers\mercados;
 
 use App\Http\Controllers\Controller;
-use App\Models\mercados\Detalle_factura;
-use App\Models\mercados\Factura;
-use App\Models\mercados\Puesto;
-use App\Models\mercados\Multa;
 use App\Models\mercados\Pago;
-use Carbon\Carbon; // Manejo de fechas
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

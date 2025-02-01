@@ -16,3 +16,10 @@
 4.- Comando para crear Seeder
 -- php artisan make:seeder PersonasTableSeeder
 -- php artisan db:seed --class=PersonasTableSeeder (Ejecutar seeder)
+
+Mercados
+php 8.0.2
+Mysql 10
+
+Agentes
+php 8.2.18

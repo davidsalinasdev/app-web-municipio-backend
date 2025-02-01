@@ -5,6 +5,7 @@ use App\Http\Controllers\mercados\SectorController;
 use App\Http\Controllers\PersonaController;
 use App\Http\Controllers\mercados\TitularController;
 use App\Http\Controllers\mercados\PuestoController;
+use App\Http\Controllers\mercados\RecibosController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -68,4 +69,9 @@ Route::middleware('jwt.verify')->group(function () {
 
     /**** Ruta para generar Pagos cada ves ue se  haga un pago ****/
     Route::resource('generar-pagos', 'App\Http\Controllers\mercados\PagosController');
+
+    /**** Ruta para todo reerente a recibos ****/
+    Route::post('recibos-carnet', [RecibosController::class, 'recibosCarnet']);
+    Route::post('recibos-puesto', [RecibosController::class, 'recibosPuesto']);
+    Route::post('generar-recibo', [RecibosController::class, 'generarRecibo']);
 });
